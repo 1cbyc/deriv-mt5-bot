@@ -1,0 +1,147 @@
+__pycache__/
+*.pyc
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+nosetests.xml
+coverage/
+
+# Environment variables
+.env
+.envrc
+venv/
+env/
+ENV/
+venv.bak/
+venv/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Virtual environment
+.vscode/settings.json
+*.code-workspace
+
+# Logs
+logs/
+*.log
+
+# Config files
+config/
+*.ini
+*.cfg
+
+# Data files
+data/
+*.csv
+*.json
+*.xls
+*.xlsx
+
+# Keys and secrets
+*.pem
+*.key
+secrets/
+credentials/
+
+# Database
+*.db
+*.sqlite
+
+# Compiled files
+*.so
+*.dll
+*.dylib
+
+# Packages
+*.jar
+*.war
+
+# C extensions
+*.so
+
+# Cython debug symbols
+cython_debug/
+
+# Binary data
+*.bin
+
+# Trading bot specific
+bot_logs/
+backtests/
+strategies/
+data/
+
+# Demo and test files
+demo.env
+demo-config.py
+
+# Real trading files (contains real money credentials)
+real.env
+real-config.py
+real_config.py
+micro-config.py
+large-account-config.py
+
+# Real trading folders (contains sensitive information)
+mt5-trading/real-trading/
+mt5-trading/real-trading/*.env
+mt5-trading/real-trading/*.py
+
+# Demo trading folders (safe to commit)
+# mt5-trading/demo-trading/ is NOT ignored - safe for testing
+
+# Ignore any other sensitive information
+secrets.json
+api_keys.json
+config.py
