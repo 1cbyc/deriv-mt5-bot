@@ -1,0 +1,19 @@
+# Unified Trading Bot System - Dependencies
+# ======================================
+
+# Core Dependencies
+python-dotenv>=1.0.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# MT5 Trading Dependencies
+MetaTrader5>=5.0.0
+
+# Web Interface Dependencies
+Flask>=2.3.0
+
+# Deriv API Dependencies
+websocket-client>=1.6.0
+
+# Additional Utilities
+requests>=2.31.0 
