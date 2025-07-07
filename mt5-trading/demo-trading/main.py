@@ -326,8 +326,8 @@ class MT5TradingBot:
                 # Determine order type
                 order_type = "BUY" if signal == "BUY" else "SELL"
                 
-                # Calculate volume based on account balance and risk
-                volume = 0.01  # Default small volume
+                # Use correct minimum volume for the symbol
+                volume = MT5Config.get_min_volume(symbol)
                 
                 # Place the order
                 if self.place_order(symbol, order_type, volume):
