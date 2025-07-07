@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MT5 Trading Bot - Web Interface</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 5px solid #007bff;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .status-running { background: #28a745; }
+        .status-stopped { background: #dc3545; }
+        .status-starting { background: #ffc107; }
+        .status-stopping { background: #fd7e14; }
+        .status-error { background: #dc3545; }
+        
+        .control-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e9ecef;
+        }
+        
+        .panel h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e9ecef;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .logs-panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .error-log {
+            color: #dc3545;
+        }
+        
+        .success-log {
+            color: #28a745;
+        }
+        
+        .info-log {
+            color: #007bff;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .control-panel {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> MT5 Trading Bot</h1>
+            <p>Web Interface for MetaTrader 5 Trading Bot</p>
+        </div>
+        
+        <div class="content">
+            <!-- Status Card -->
+            <div class="status-card">
+                <h3>
+                    <span class="status-indicator" id="statusIndicator"></span>
+                    Bot Status: <span id="botStatus">Loading...</span>
+                </h3>
+                <p id="botType">Bot Type: -</p>
+                <p id="lastUpdate">Last Update: -</p>
+            </div>
+            
+            <!-- Alert Messages -->
+            <div id="alertContainer"></div>
+            
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <!-- Bot Control -->
+                <div class="panel">
+                    <h3><i class="fas fa-cogs"></i> Bot Control</h3>
+                    <div class="form-group">
+                        <label for="botTypeSelect">Bot Type:</label>
+                        <select id="botTypeSelect" class="form-control">
+                            <option value="demo">Demo Trading Bot</option>
+                            <option value="real">Real Trading Bot</option>
+                            <option value="micro">Micro Trading Bot</option>
+                        </select>
+                    </div>
+                    <button id="startBtn" class="btn btn-success">
+                        <i class="fas fa-play"></i> Start Bot
+                    </button>
+                    <button id="stopBtn" class="btn btn-danger">
+                        <i class="fas fa-stop"></i> Stop Bot
+                    </button>
+                </div>
+                
+                <!-- Manual Trading -->
+                <div class="panel">
+                    <h3><i class="fas fa-hand-holding-usd"></i> Manual Trading</h3>
+                    <div class="form-group">
+                        <label for="symbolSelect">Symbol:</label>
+                        <select id="symbolSelect" class="form-control">
+                            <option value="Volatility 100 Index">Volatility 100 Index</option>
+                            <option value="Volatility 75 Index">Volatility 75 Index</option>
+                            <option value="Volatility 50 Index">Volatility 50 Index</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="orderTypeSelect">Order Type:</label>
+                        <select id="orderTypeSelect" class="form-control">
+                            <option value="BUY">Buy</option>
+                            <option value="SELL">Sell</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="volumeInput">Volume:</label>
+                        <input type="number" id="volumeInput" class="form-control" value="0.01" step="0.01" min="0.01">
+                    </div>
+                    <button id="placeTradeBtn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Place Trade
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="balanceValue">$0.00</div>
+                    <div class="stat-label">Balance</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="equityValue">$0.00</div>
+                    <div class="stat-label">Equity</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="profitValue">$0.00</div>
+                    <div class="stat-label">Profit/Loss</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="positionsValue">0</div>
+                    <div class="stat-label">Open Positions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="tradesValue">0</div>
+                    <div class="stat-label">Total Trades</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="winRateValue">0%</div>
+                    <div class="stat-label">Win Rate</div>
+                </div>
+            </div>
+            
+            <!-- Logs -->
+            <div class="panel">
+                <h3><i class="fas fa-list"></i> Bot Logs</h3>
+                <div class="logs-panel" id="logsContainer">
+                    <div class="log-entry info-log">Web interface started...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global variables
+        let currentStatus = 'stopped';
+        let updateInterval;
+        
+        // Initialize the interface
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConfig();
+            updateStatus();
+            startAutoUpdate();
+        });
+        
+        // Load configuration
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                
+                // Populate symbol select
+                const symbolSelect = document.getElementById('symbolSelect');
+                symbolSelect.innerHTML = '';
+                config.symbols.forEach(symbol => {
+                    const option = document.createElement('option');
+                    option.value = symbol;
+                    option.textContent = symbol;
+                    symbolSelect.appendChild(option);
+                });
+                
+            } catch (error) {
+                console.error('Error loading config:', error);
+            }
+        }
+        
+        // Update bot status
+        async function updateStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                // Update status indicator
+                const statusIndicator = document.getElementById('statusIndicator');
+                const botStatus = document.getElementById('botStatus');
+                const botType = document.getElementById('botType');
+                const lastUpdate = document.getElementById('lastUpdate');
+                
+                statusIndicator.className = `status-indicator status-${data.status}`;
+                botStatus.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+                botType.textContent = `Bot Type: ${data.bot_type || '-'}`;
+                lastUpdate.textContent = `Last Update: ${data.last_update}`;
+                
+                currentStatus = data.status;
+                
+                // Update statistics
+                if (data.stats) {
+                    document.getElementById('balanceValue').textContent = `$${data.stats.balance.toFixed(2)}`;
+                    document.getElementById('equityValue').textContent = `$${data.stats.equity.toFixed(2)}`;
+                    document.getElementById('profitValue').textContent = `$${data.stats.profit.toFixed(2)}`;
+                    document.getElementById('positionsValue').textContent = data.stats.open_positions;
+                    document.getElementById('tradesValue').textContent = data.stats.total_trades;
+                    document.getElementById('winRateValue').textContent = `${data.stats.win_rate.toFixed(1)}%`;
+                }
+                
+                // Update logs
+                updateLogs(data.logs || []);
+                
+            } catch (error) {
+                console.error('Error updating status:', error);
+            }
+        }
+        
+        // Update logs display
+        function updateLogs(logs) {
+            const logsContainer = document.getElementById('logsContainer');
+            logsContainer.innerHTML = '';
+            
+            logs.forEach(log => {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry info-log';
+                logEntry.textContent = log;
+                logsContainer.appendChild(logEntry);
+            });
+            
+            // Scroll to bottom
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+        
+        // Start auto-update
+        function startAutoUpdate() {
+            updateInterval = setInterval(updateStatus, 2000); // Update every 2 seconds
+        }
+        
+        // Show alert message
+        function showAlert(message, type = 'info') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            alertContainer.appendChild(alert);
+            
+            // Remove alert after 5 seconds
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+        
+        // Event listeners
+        document.getElementById('startBtn').addEventListener('click', async function() {
+            const botType = document.getElementById('botTypeSelect').value;
+            
+            try {
+                const response = await fetch('/api/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        bot_type: botType,
+                        config: {}
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                } else {
+                    showAlert(result.message, 'danger');
+                }
+                
+            } catch (error) {
+                showAlert('Error starting bot: ' + error.message, 'danger');
+            }
+        });
+        
+        document.getElementById('stopBtn').addEventListener('click', async function() {
+            try {
+                const response = await fetch('/api/stop', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                } else {
+                    showAlert(result.message, 'danger');
+                }
+                
+            } catch (error) {
+                showAlert('Error stopping bot: ' + error.message, 'danger');
+            }
+        });
+        
+        document.getElementById('placeTradeBtn').addEventListener('click', async function() {
+            const symbol = document.getElementById('symbolSelect').value;
+            const orderType = document.getElementById('orderTypeSelect').value;
+            const volume = parseFloat(document.getElementById('volumeInput').value);
+            
+            if (!symbol || !orderType || !volume) {
+                showAlert('Please fill in all fields', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/trade', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        symbol: symbol,
+                        order_type: orderType,
+                        volume: volume
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert(result.message, 'success');
+                } else {
+                    showAlert(result.message, 'danger');
+                }
+                
+            } catch (error) {
+                showAlert('Error placing trade: ' + error.message, 'danger');
+            }
+        });
+    </script>
+</body>
+</html>

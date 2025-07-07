@@ -1,0 +1,4 @@
+MetaTrader5==5.0.45
+pandas==2.0.3
+numpy==1.24.3
+python-dotenv==1.0.0 

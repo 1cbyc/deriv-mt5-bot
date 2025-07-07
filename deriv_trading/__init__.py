@@ -1,0 +1,1 @@
+# Deriv Trading Bot Package 
