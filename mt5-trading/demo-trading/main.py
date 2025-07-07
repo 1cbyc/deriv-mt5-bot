@@ -338,45 +338,43 @@ class MT5TradingBot:
         except Exception as e:
             print(f"[ERROR] Error processing {symbol}: {e}")
     
-    def trading_loop(self):
-        """Main trading loop"""
-        print(f"[INFO] Starting trading loop...")
-        
-        while self.running:
-            try:
-                # Process each symbol
-                for symbol in self.symbols:
-                    if not self.running:
-                        break
-                    self.process_symbol(symbol)
-                    time.sleep(1)  # Small delay between symbols
-                
-                # Check and manage existing positions
-                self.check_and_manage_positions()
-                
-                # Wait before next cycle
-                time.sleep(MT5Config.TRADING_INTERVAL)
-                
-            except Exception as e:
-                print(f"[ERROR] Error in trading loop: {e}")
-                time.sleep(5)  # Wait before retrying
-    
     def start(self):
         """Start the trading bot"""
         print(f"[INFO] Strategy: {self.strategy_type}")
         print(f"[INFO] Symbols: {', '.join(self.symbols)}")
+        MT5Config.print_config()
         
         # Connect to MT5
         if not self.connect():
-            print("[ERROR] Failed to connect to MT5")
+            print("[ERROR] Failed to connect to MT5. Please check that MetaTrader 5 is running and demo.env credentials are correct.")
+            print("[HINT] Make sure you are logged in to a demo account in MT5 and the server is correct.")
             return
-        
         self.running = True
         print("[SUCCESS] MT5 Trading bot started successfully!")
-        
+        cycles = 0
+        trades_made = 0
         try:
-            # Start the trading loop
-            self.trading_loop()
+            while self.running:
+                cycles += 1
+                for symbol in self.symbols:
+                    if not self.running:
+                        break
+                    print(f"[CYCLE {cycles}] Processing symbol: {symbol}")
+                    df = self.get_historical_data(symbol, MT5Config.TIMEFRAME, MT5Config.DATA_LOOKBACK)
+                    if df.empty:
+                        print(f"[WARNING] No data for {symbol}. Is MT5 running and logged in to a demo account? Waiting for data...")
+                        time.sleep(5)
+                        continue
+                    self.process_symbol(symbol)
+                    time.sleep(1)
+                self.check_and_manage_positions()
+                open_positions = mt5.positions_total() if self.connected else 0
+                trades_made = sum(perf['trades'] for perf in self.symbol_performance.values())
+                if cycles % 5 == 0:
+                    print(f"[STATUS] Cycles: {cycles}, Trades made: {trades_made}, Open positions: {open_positions}")
+                if cycles == 10 and trades_made == 0:
+                    print("[INFO] No trades made after 10 cycles. The bot may be waiting for a valid trading signal or market conditions. If this persists, check your strategy and market data.")
+                time.sleep(MT5Config.TRADING_INTERVAL)
         except KeyboardInterrupt:
             print("\n[STOP] Trading interrupted by user")
         except Exception as e:
