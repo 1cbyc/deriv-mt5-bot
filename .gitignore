@@ -145,3 +145,6 @@ mt5-trading/real-trading/*.py
 secrets.json
 api_keys.json
 config.py
+
+# personal
+README.md
