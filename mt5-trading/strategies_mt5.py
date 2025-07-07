@@ -308,31 +308,163 @@ class MultiStrategy(SyntheticTradingStrategy):
             IchimokuStrategy(symbol, timeframe),
             MomentumStrategy(symbol, timeframe)
         ]
+        
+        # Strategy weights based on market conditions and reliability
+        self.strategy_weights = {
+            'MovingAverageCrossover': 1.0,
+            'RSIStrategy': 1.2,
+            'BollingerBandsStrategy': 1.1,
+            'VolatilityBreakoutStrategy': 1.3,  # Higher weight for volatility indices
+            'MACDStrategy': 1.0,
+            'StochasticStrategy': 0.9,
+            'WilliamsRStrategy': 0.9,
+            'ParabolicSARStrategy': 0.8,
+            'IchimokuStrategy': 1.0,
+            'MomentumStrategy': 0.8
+        }
+        
+        # Market condition detection
+        self.volatility_threshold = 0.02
+        self.trend_strength_threshold = 0.6
 
     def update_data(self, df: pd.DataFrame):
         self.data = df.copy()
         for strat in self.strategies:
             strat.update_data(df)
 
+    def detect_market_conditions(self) -> dict:
+        """Detect current market conditions to adjust strategy weights"""
+        if len(self.data) < 20:
+            return {'volatility': 'unknown', 'trend': 'unknown', 'regime': 'unknown'}
+        
+        # Calculate volatility
+        returns = self.data['close'].pct_change().dropna()
+        volatility = returns.rolling(window=20).std().iloc[-1]
+        
+        # Calculate trend strength
+        short_ma = self.data['close'].rolling(window=10).mean()
+        long_ma = self.data['close'].rolling(window=30).mean()
+        current_short = short_ma.iloc[-1]
+        current_long = long_ma.iloc[-1]
+        trend_strength = abs(current_short - current_long) / current_long
+        
+        # Determine market regime
+        if volatility > self.volatility_threshold:
+            regime = 'volatile'
+        elif trend_strength > self.trend_strength_threshold:
+            regime = 'trending'
+        else:
+            regime = 'ranging'
+        
+        return {
+            'volatility': 'high' if volatility > self.volatility_threshold else 'low',
+            'trend': 'strong' if trend_strength > self.trend_strength_threshold else 'weak',
+            'regime': regime
+        }
+
+    def adjust_weights_for_conditions(self, conditions: dict) -> dict:
+        """Adjust strategy weights based on market conditions"""
+        adjusted_weights = self.strategy_weights.copy()
+        
+        if conditions['regime'] == 'volatile':
+            # Increase weights for volatility-based strategies
+            adjusted_weights['VolatilityBreakoutStrategy'] *= 1.5
+            adjusted_weights['BollingerBandsStrategy'] *= 1.3
+            adjusted_weights['RSIStrategy'] *= 1.2
+            # Decrease weights for trend-following strategies
+            adjusted_weights['MovingAverageCrossover'] *= 0.8
+            adjusted_weights['MACDStrategy'] *= 0.8
+            
+        elif conditions['regime'] == 'trending':
+            # Increase weights for trend-following strategies
+            adjusted_weights['MovingAverageCrossover'] *= 1.4
+            adjusted_weights['MACDStrategy'] *= 1.3
+            adjusted_weights['ParabolicSARStrategy'] *= 1.2
+            # Decrease weights for mean-reversion strategies
+            adjusted_weights['RSIStrategy'] *= 0.9
+            adjusted_weights['StochasticStrategy'] *= 0.8
+            
+        else:  # ranging market
+            # Increase weights for mean-reversion strategies
+            adjusted_weights['RSIStrategy'] *= 1.3
+            adjusted_weights['StochasticStrategy'] *= 1.2
+            adjusted_weights['WilliamsRStrategy'] *= 1.2
+            adjusted_weights['BollingerBandsStrategy'] *= 1.1
+            # Decrease weights for trend-following strategies
+            adjusted_weights['MovingAverageCrossover'] *= 0.7
+            adjusted_weights['MACDStrategy'] *= 0.7
+        
+        return adjusted_weights
+
     def get_signal(self) -> Tuple[str, float]:
+        """Get weighted signal based on market conditions"""
+        if len(self.data) < 30:
+            return "HOLD", 0.0
+        
+        # Detect market conditions
+        conditions = self.detect_market_conditions()
+        
+        # Adjust weights based on conditions
+        adjusted_weights = self.adjust_weights_for_conditions(conditions)
+        
+        # Collect signals and confidences
         signals = []
         confidences = []
-        for strat in self.strategies:
-            signal, confidence = strat.get_signal()
-            if signal != "HOLD":
-                signals.append(signal)
-                confidences.append(confidence)
+        weighted_confidences = []
+        
+        for i, strat in enumerate(self.strategies):
+            try:
+                signal, confidence = strat.get_signal()
+                if signal != "HOLD":
+                    signals.append(signal)
+                    confidences.append(confidence)
+                    
+                    # Apply adjusted weight
+                    strategy_name = strat.__class__.__name__
+                    weight = adjusted_weights.get(strategy_name, 1.0)
+                    weighted_confidence = confidence * weight
+                    weighted_confidences.append(weighted_confidence)
+                    
+            except Exception as e:
+                print(f"Error in strategy {strat.__class__.__name__}: {e}")
+                continue
+        
         if not signals:
             return "HOLD", 0.0
-        buy_count = signals.count("BUY")
-        sell_count = signals.count("SELL")
-        avg_conf = np.mean(confidences) if confidences else 0.0
-        if buy_count > sell_count:
-            return "BUY", avg_conf
-        elif sell_count > buy_count:
-            return "SELL", avg_conf
+        
+        # Calculate weighted consensus
+        buy_weighted_sum = 0
+        sell_weighted_sum = 0
+        total_weight = 0
+        
+        for signal, weighted_conf in zip(signals, weighted_confidences):
+            if signal == "BUY":
+                buy_weighted_sum += weighted_conf
+            elif signal == "SELL":
+                sell_weighted_sum += weighted_conf
+            total_weight += weighted_conf
+        
+        # Determine final signal
+        if buy_weighted_sum > sell_weighted_sum:
+            final_signal = "BUY"
+            final_confidence = buy_weighted_sum / total_weight if total_weight > 0 else 0
+        elif sell_weighted_sum > buy_weighted_sum:
+            final_signal = "SELL"
+            final_confidence = sell_weighted_sum / total_weight if total_weight > 0 else 0
         else:
-            return "HOLD", avg_conf
+            final_signal = "HOLD"
+            final_confidence = 0
+        
+        # Apply market condition multiplier
+        if conditions['regime'] == 'volatile':
+            final_confidence *= 0.9  # Slightly reduce confidence in volatile markets
+        elif conditions['regime'] == 'trending':
+            final_confidence *= 1.1  # Increase confidence in trending markets
+        
+        # Ensure confidence is within bounds
+        final_confidence = max(0.0, min(1.0, final_confidence))
+        
+        return final_signal, final_confidence
 
 class MeanReversionStrategy(SyntheticTradingStrategy):
     def __init__(self, symbol: str, timeframe: str = 'M5', period: int = 20, std_dev: float = 2.0):
