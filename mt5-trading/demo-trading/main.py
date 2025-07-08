@@ -352,8 +352,20 @@ class MT5TradingBot:
     def place_order(self, symbol: str, order_type: str, volume: float, 
                    price: float = 0.0, sl: float = 0.0, tp: float = 0.0, max_retries: int = 3) -> bool:
         """Place an order on MT5 with retry mechanism for volume issues"""
-        current_volume = volume
-        
+        # Get symbol info for volume step and min lot
+        symbol_info = mt5.symbol_info(symbol)
+        min_lot = 0.01
+        lot_step = 0.01
+        if symbol_info:
+            min_lot = getattr(symbol_info, 'volume_min', 0.01)
+            lot_step = getattr(symbol_info, 'volume_step', 0.01)
+        def round_volume(vol):
+            # Round to nearest allowed step and enforce min lot
+            return max(min_lot, round(vol / lot_step) * lot_step)
+        current_volume = round_volume(volume)
+        if current_volume < min_lot:
+            print(f"[ERROR] Volume {current_volume} is below minimum for {symbol}")
+            return False
         for attempt in range(max_retries):
             try:
                 # Prepare the request
@@ -369,23 +381,22 @@ class MT5TradingBot:
                     "type_time": mt5.ORDER_TIME_GTC,
                     "type_filling": mt5.ORDER_FILLING_FOK,
                 }
-                
                 # Add stop loss and take profit if provided
                 if sl > 0:
                     request["sl"] = sl
                 if tp > 0:
                     request["tp"] = tp
-                
                 # Send the order
                 result = mt5.order_send(request)
-                
                 # Check if order was successful
                 if result.retcode != mt5.TRADE_RETCODE_DONE:
                     print(f"[ERROR] Order failed for {symbol} (attempt {attempt + 1}): {result.comment}")
-                    
                     # Try with smaller volume for volume-related errors
                     if "volume" in result.comment.lower():
-                        current_volume = max(0.01, current_volume * 0.5)
+                        current_volume = round_volume(max(min_lot, current_volume * 0.5))
+                        if current_volume < min_lot:
+                            print(f"[ERROR] Volume {current_volume} is below minimum for {symbol}")
+                            break
                         print(f"[RETRY] Trying with volume: {current_volume}")
                         continue
                     else:
@@ -393,8 +404,6 @@ class MT5TradingBot:
                 else:
                     # Success
                     print(f"[SUCCESS] Order placed: {symbol} {order_type} {current_volume} lots at {result.price}")
-                    
-                    # Store position info
                     self.active_positions[result.order] = {
                         'symbol': symbol,
                         'type': order_type,
@@ -402,14 +411,10 @@ class MT5TradingBot:
                         'price': result.price,
                         'time': datetime.now()
                     }
-                    
                     return True
-            
             except Exception as e:
                 print(f"[ERROR] Error placing order for {symbol} (attempt {attempt + 1}): {e}")
                 return False
-        
-        # If we get here, all attempts failed
         print(f"[ERROR] All attempts failed for {symbol}")
         return False
     
